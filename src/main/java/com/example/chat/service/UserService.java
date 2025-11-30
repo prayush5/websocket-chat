@@ -1,14 +1,22 @@
 package com.example.chat.service;
 
+import com.example.chat.entity.User;
+import com.example.chat.repo.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
     private final Set<String> activeUsers = ConcurrentHashMap.newKeySet();
+
 
     public void addUsers(String username){
         activeUsers.add(username);
