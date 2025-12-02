@@ -18,7 +18,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RedisService redisService;
-//    private final Set<String> activeUsers = ConcurrentHashMap.newKeySet();
 
 
     public void addUsers(String username){

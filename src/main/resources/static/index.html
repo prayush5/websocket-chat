@@ -50,6 +50,21 @@
         .toggle-form { text-align: center; margin-top: 12px; }
         .toggle-link { color: #3498db; cursor: pointer; font-size: 14px; text-decoration: none; }
 
+        .logout-btn {
+            background: #e74c3c !important;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b !important;
+        }
+
         .chat-container {
           max-width: 880px;
           margin: 0 auto;
@@ -218,7 +233,6 @@
             <div id="login-error" class="error" style="display: none;"></div>
         </form>
 
-        <!-- Register Form -->
         <form id="registerForm" style="display: none;">
             <div class="form-group">
                 <input type="text" id="registerName" placeholder="Username" autocomplete="off" class="form-control" />
@@ -243,8 +257,11 @@
 
 <div id="chat-page" class="hidden">
     <div class="chat-container">
-        <div class="chat-header">
+        <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h1 class="chat-title">Websocket Chat</h1>
+            <button id="logoutBtn" class="logout-btn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                Logout
+            </button>
         </div>
         <div class="connecting">Connecting...</div>
         <div id="messageArea" class="message-area"></div>
@@ -271,12 +288,12 @@
     var registerSuccess = document.querySelector('#register-success');
     var showRegister = document.querySelector('#showRegister');
     var showLogin = document.querySelector('#showLogin');
+    var logoutBtn = document.querySelector('#logoutBtn');
 
     var stompClient = null;
     var username = null;
     var jwtToken = null;
 
-    // Add this - your backend server URL
     const BACKEND_URL = 'http://localhost:8080';
 
     var colors = [
@@ -284,7 +301,6 @@
         '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
     ];
 
-    // Toggle between login and register forms
     showRegister.addEventListener('click', function() {
         usernameForm.style.display = 'none';
         registerForm.style.display = 'block';
@@ -303,7 +319,6 @@
         registerSuccess.style.display = 'none';
     }
 
-    // Login function - FIXED URL
     async function connect(event) {
         event.preventDefault();
 
@@ -318,7 +333,6 @@
         try {
             console.log('Attempting login for user:', username);
 
-            // Use full backend URL
             const response = await fetch(BACKEND_URL + '/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -361,7 +375,95 @@
         }
     }
 
-    // Register function - FIXED URL
+    async function logout() {
+    console.log('=== LOGOUT FUNCTION CALLED ===');
+    console.log('Current username:', username);
+    console.log('JWT Token exists:', !!jwtToken);
+    console.log('Stomp Client exists:', !!stompClient);
+
+    try {
+        if (!confirm('Are you sure you want to logout?')) {
+            console.log('Logout cancelled by user');
+            return;
+        }
+
+        console.log('Logging out user:', username);
+
+        if (jwtToken) {
+            console.log('Sending logout request to backend...');
+
+            const response = await fetch(BACKEND_URL + '/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + jwtToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Backend response status:', response.status);
+
+            const responseText = await response.text();
+            console.log('Backend response:', responseText);
+
+            if (response.ok) {
+                console.log('Backend logout successful');
+            } else {
+                console.warn('Backend logout failed:', responseText);
+            }
+        } else {
+            console.warn('No JWT token found, skipping backend logout');
+        }
+
+        if (stompClient && stompClient.connected) {
+            console.log('Disconnecting WebSocket...');
+
+            var leaveMessage = {
+                sender: username,
+                type: 'LEAVE'
+            };
+
+            try {
+                stompClient.send("/app/chat.addUser", {}, JSON.stringify(leaveMessage));
+                console.log('Leave message sent');
+            } catch (e) {
+                console.log('Could not send leave message:', e);
+            }
+
+            stompClient.disconnect(function() {
+                console.log('WebSocket disconnected');
+            });
+        }
+
+        localStorage.removeItem('chat-username');
+        localStorage.removeItem('chat-token');
+        console.log('Local storage cleared');
+
+        username = null;
+        jwtToken = null;
+        stompClient = null;
+
+        chatPage.classList.add('hidden');
+        usernamePage.classList.remove('hidden');
+
+        messageArea.innerHTML = '';
+
+        document.querySelector('#name').value = '';
+        document.querySelector('#password').value = '';
+        document.querySelector('#name').focus();
+
+        console.log('Logout completed successfully');
+
+        showLoginError('Logged out successfully!');
+        setTimeout(() => {
+            if (loginError) loginError.style.display = 'none';
+        }, 3000);
+
+    } catch (error) {
+        console.error('Logout error:', error);
+        alert('Logout failed: ' + error.message);
+    }
+}
+
     async function register(event) {
         event.preventDefault();
 
@@ -394,7 +496,6 @@
         try {
             console.log('Sending registration request to:', BACKEND_URL + '/api/auth/register');
 
-            // Use full backend URL
             const response = await fetch(BACKEND_URL + '/api/auth/register', {
                 method: 'POST',
                 headers: {
@@ -572,6 +673,14 @@
     usernameForm.addEventListener('submit', connect, true);
     registerForm.addEventListener('submit', register, true);
     messageForm.addEventListener('submit', sendMessage, true);
+
+    document.addEventListener('click', function(event){
+        if(event.target && event.target.id === 'logoutBtn'){
+            console.log('Logout button clicked');
+            event.preventDefault();
+            logout();
+        }
+    });
 </script>
 
 <!-- External libraries -->

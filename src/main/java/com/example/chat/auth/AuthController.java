@@ -205,22 +205,6 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<?> test(@RequestHeader(value = "Authorization", required = false) String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body("No token provided");
-        }
-
-        String token = authHeader.substring(7);
-
-        try {
-            String username = jwtService.getUsernameFromToken(token);
-            return ResponseEntity.ok("Hello " + username + ", your token is valid");
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body("Invalid token");
-        }
-    }
-
     private Map<String, Object> createErrorResponse(String message){
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("error", message);
