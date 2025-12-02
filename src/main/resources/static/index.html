@@ -277,7 +277,7 @@
     var jwtToken = null;
 
     // Add this - your backend server URL
-    const BACKEND_URL = 'https://ungrammatical-noble-unprofitable.ngrok-free.dev';
+    const BACKEND_URL = 'http://localhost:8080';
 
     var colors = [
         '#2196F3', '#32c787', '#00BCD4', '#ff5652',
@@ -339,8 +339,10 @@
             }
 
             const data = await response.json();
+            console.log('Login response data: ', data);
+
             jwtToken = data.token;
-            username = data.username;
+            username = data.user.username;
 
             console.log('Login successful! Token received for user:', username);
 
@@ -466,13 +468,18 @@
     }
 
     function onConnected() {
-        console.log('WebSocket connected');
+        console.log('WebSocket connected for user: ' + username);
 
         stompClient.subscribe('/topic/public', onMessageReceived);
 
+        var joinMessage = {
+            sender: username,
+            type: 'JOIN'
+        }
+
         stompClient.send("/app/chat.addUser",
             {},
-            JSON.stringify({sender: username, type: 'JOIN'})
+            JSON.stringify(joinMessage)
         );
 
         connectingElement.classList.add('hidden');
@@ -489,15 +496,24 @@
 
         var messageContent = messageInput.value.trim();
 
-        if (messageContent && stompClient) {
+        if (messageContent && stompClient && username) {
             var chatMessage = {
                 sender: username,
                 content: messageContent,
                 type: 'CHAT'
             };
 
+            console.log('Sending chat message: ', chatMessage);
+
             stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
             messageInput.value = '';
+        } else {
+            console.error('Cannot send message. Check:', {
+                hasContent: !!messageContent,
+                hasStompClient: !!stompClient,
+                hasUsername: !!username,
+                stompClientConnected: stompClient ? stompClient.connected : false
+            });
         }
     }
 
@@ -519,8 +535,10 @@
 
         var avatarElement = document.createElement('div');
         avatarElement.classList.add('avatar');
-        avatarElement.textContent = message.sender[0].toUpperCase();
-        avatarElement.style.backgroundColor = getAvatarColor(message.sender);
+
+        var sender = message.sender || 'Unknown';
+        avatarElement.textContent = sender.charAt(0).toUpperCase();
+        avatarElement.style.backgroundColor = getAvatarColor(sender);
 
         var usernameElement = document.createElement('span');
         usernameElement.classList.add('username');
@@ -531,7 +549,7 @@
 
         var textElement = document.createElement('div');
         textElement.classList.add('text');
-        textElement.textContent = message.content;
+        textElement.textContent = message.content || '';
 
         messageElement.appendChild(header);
         messageElement.appendChild(textElement);

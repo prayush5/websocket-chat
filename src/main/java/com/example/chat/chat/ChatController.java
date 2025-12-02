@@ -30,4 +30,10 @@ public class ChatController {
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
         return chatMessage;
     }
+
+    @MessageMapping("/chat.leave")
+    @SendTo("/topic/public")
+    public ChatMessage leave(@Payload ChatMessage chatMessage){
+        return chatMessage;
+    }
 }

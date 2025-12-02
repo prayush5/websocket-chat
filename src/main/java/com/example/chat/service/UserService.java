@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -15,30 +17,40 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final Set<String> activeUsers = ConcurrentHashMap.newKeySet();
+    private final RedisService redisService;
+//    private final Set<String> activeUsers = ConcurrentHashMap.newKeySet();
 
 
     public void addUsers(String username){
-        activeUsers.add(username);
-        System.out.println("User added to active list: " + username);
-        System.out.println("Total active users: " + activeUsers.size());
+        redisService.addActiveUser(username);
+        printActiveUsers();
     }
 
     public void removeUser(String username){
-        activeUsers.remove(username);
-        System.out.println("User" + username + "removed");
-        System.out.println("Total active users: " + activeUsers.size());
+        redisService.removeActiveUser(username);
+        printActiveUsers();
     }
 
     public boolean isActive(String username){
-        return activeUsers.contains(username);
+        return redisService.isUserActive(username);
     }
 
     public Set<String> getActiveUsers(){
-        return Set.copyOf(activeUsers);
+        Set<Object> redisUsers = redisService.getActiveUsers();
+        return redisUsers.stream()
+                .map(Object::toString)
+                .collect(Collectors.toSet());
     }
 
     public int getActiveUserCount(){
-        return activeUsers.size();
+        Long count = redisService.getActiveUserCount();
+        return count != null ? count.intValue() : 0;
+    }
+
+    private void printActiveUsers(){
+        System.out.println("=== Active Users (from redis) ===");
+        System.out.println("Users: " + getActiveUsers());
+        System.out.println("Count: " + getActiveUserCount());
+        System.out.println("=================================");
     }
 }
