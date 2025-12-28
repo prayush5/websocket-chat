@@ -82,7 +82,6 @@
         }
         .chat-title { font-weight: 400; font-size: 26px; color: #222; }
 
-        /* connecting / status */
         .connecting {
           padding: 10px 20px;
           color: #7f8c8d;
@@ -157,8 +156,8 @@
 
         .text {
           display: block;
-          margin-left: 46px;   /* aligns text under username (avatar 36px + gap 10px = 46px) */
-          margin-top: -24px;   /* pulls text visually under the header line (tweak if needed) */
+          margin-left: 46px; 
+          margin-top: -24px;  
           padding: 4px 6px;
           color: #34495e;
           font-size: 14px;
@@ -363,7 +362,6 @@
             usernamePage.classList.add('hidden');
             chatPage.classList.remove('hidden');
 
-            // Use full backend URL for WebSocket too
             var socket = new SockJS(BACKEND_URL + '/ws');
             stompClient = Stomp.over(socket);
 
@@ -477,7 +475,6 @@
             confirmPasswordLength: confirmPassword.length
         });
 
-        // Validation
         if (!registerUsername || !password || !confirmPassword) {
             showRegisterError('Please fill all fields');
             return;
@@ -669,7 +666,6 @@
         return colors[index];
     }
 
-    // Event listeners
     usernameForm.addEventListener('submit', connect, true);
     registerForm.addEventListener('submit', register, true);
     messageForm.addEventListener('submit', sendMessage, true);
